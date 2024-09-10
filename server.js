@@ -248,7 +248,7 @@ async function asyncImportRepo(id, repo, user, action) {
 
                 if (response.status == 302 || response.data == '') {
                     consoleLog(id, 'Create Success: '+user+'/'+repo)
-                    active = parseInt(new Date().getTime()/1000)+150
+                    active = parseInt(new Date().getTime()/1000)+300
                 } else {
                     consoleLog(id, 'Create Failed: '+user+'/'+repo)
                 }
