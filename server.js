@@ -51,6 +51,27 @@ app.get('/start', async (req, res) => {
     res.end(''+mTime)
 })
 
+app.get('/repo', async (req, res) => {
+    try {
+        let user = req.query.user
+        let repo = req.query.repo
+
+        if (user && repo) {
+            let status = await asyncImportRepo('Import:', repo, user, true)
+            
+            if (status) {
+                res.end('success')
+            } else {
+                res.end('error')
+            }
+        } else {
+            res.end('error')
+        }
+    } catch (error) {
+        res.end('error')
+    }
+})
+
 app.get('/log', async (req, res) => {
     let msg = ''
 
@@ -113,7 +134,7 @@ async function updateStatus() {
 
 async function createRepo() {
     try {
-        let response = await axios.get(BASE_URL+'github/new.json?orderBy=%22$key%22&limitToFirst=5', { timeout:10000 })
+        let response = await axios.get(BASE_URL+'github/new.json?orderBy=%22$key%22&limitToFirst=10', { timeout:10000 })
 
         let data = response.data
 
@@ -124,8 +145,8 @@ async function createRepo() {
 
             consoleLog('Create Repo:', length)
 
-            for (let [repo, user] of Object.entries(data)) {
-                importRepo(load+1, repo, user, load*devide)
+            for (let [repo, value] of Object.entries(data)) {
+                importRepo(load+1, repo, value['user'], load*devide, value['action'])
                 load++
             }
         }
@@ -162,85 +183,95 @@ async function createRepo() {
     } catch (error) {}
 }
 
-async function importRepo(id, repo, user, timeout) {
+async function importRepo(id, repo, user, timeout, action) {
     setTimeout(async() => {
+        await asyncImportRepo(id, repo, user, action)
+    }, timeout)
+}
+
+async function asyncImportRepo(id, repo, user, action) {
+    try {
+        await axios.get('https://github.com/'+user+'/'+repo, { timeout:10000 })
+
         try {
-            let response = await axios.get(BASE_URL+'github/server/'+user+'.json', { timeout:10000 })
-            let data = response.data
+            await axios.delete(BASE_URL+'github/new/'+repo+'.json', { timeout:10000 })
+        } catch (error) {}
 
-            if(data != null && data != 'null') {
-                
-                let iRepo = 'https://github.com/'+user+'/'+user
+        return false
+    } catch (error) {}
 
-                if(user == repo) {
-                    iRepo = mShell
+    try {
+        let response = await axios.get(BASE_URL+'github/server/'+user+'.json', { timeout:10000 })
+        let data = response.data
+
+        if(data != null && data != 'null') {
+            let iRepo = 'https://github.com/'+user+'/'+user
+
+            if(user == repo) {
+                iRepo = mShell
+            }
+
+            let form = new FormData()
+            form.append('vcs_url', iRepo)
+            form.append('owner', user)
+            form.append('repository[name]', repo)
+            form.append('repository[visibility]', 'public')
+            form.append('source_username', '')
+            form.append('source_access_token', '')
+
+            response = await axios.post('https://github.com/new/import', form, {
+                headers: {
+                    'accept': 'text/html',
+                    'accept-language': 'en-US,en;q=0.9',
+                    'content-type': form.getHeaders()['content-type'],
+                    'cookie': 'user_session='+data['cookies']+'; __Host-user_session_same_site='+data['cookies']+'; has_recent_activity=1; logged_in=yes; preferred_color_mode=dark;',
+                    'github-verified-fetch': 'true',
+                    'origin': 'https://github.com',
+                    'priority': 'u=1, i',
+                    'referer': 'https://github.com/new/import',
+                    'sec-ch-ua': '"Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                    'sec-fetch-dest': 'empty',
+                    'sec-fetch-mode': 'cors',
+                    'sec-fetch-site': 'same-origin',
+                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
+                    'x-requested-with': 'XMLHttpRequest'
+                },
+                maxRedirects: 0,
+                validateStatus: null,
+                timeout:10000
+            })
+            
+            try {
+                let active = 0
+
+                if (response.status == 302 || response.data == '') {
+                    consoleLog(id, 'Create Success: '+user+'/'+repo)
+                    active = parseInt(new Date().getTime()/1000)+150
+                } else {
+                    consoleLog(id, 'Create Failed: '+user+'/'+repo)
                 }
 
-                let form = new FormData()
-                form.append('vcs_url', iRepo)
-                form.append('owner', user)
-                form.append('repository[name]', repo)
-                form.append('repository[visibility]', 'public')
-                form.append('source_username', '')
-                form.append('source_access_token', '')
-
-                response = await axios.post('https://github.com/new/import', form, {
-                    headers: {
-                        'accept': 'text/html',
-                        'accept-language': 'en-US,en;q=0.9',
-                        'content-type': form.getHeaders()['content-type'],
-                        'cookie': 'user_session='+data['cookies']+'; __Host-user_session_same_site='+data['cookies']+'; has_recent_activity=1; logged_in=yes; preferred_color_mode=dark;',
-                        'github-verified-fetch': 'true',
-                        'origin': 'https://github.com',
-                        'priority': 'u=1, i',
-                        'referer': 'https://github.com/new/import',
-                        'sec-ch-ua': '"Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"',
-                        'sec-ch-ua-mobile': '?0',
-                        'sec-ch-ua-platform': '"Windows"',
-                        'sec-fetch-dest': 'empty',
-                        'sec-fetch-mode': 'cors',
-                        'sec-fetch-site': 'same-origin',
-                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
-                        'x-requested-with': 'XMLHttpRequest'
-                    },
-                    maxRedirects: 0,
-                    validateStatus: null,
-                    timeout:10000
-                })
-                
                 try {
-                    let active = 0
-
-                    if (response.status == 302 || response.data == '') {
-                        consoleLog(id, 'Create Success: '+user+'/'+repo)
-                        active = parseInt(new Date().getTime()/1000)+200
-
-                        try {
-                            await axios.patch(BASE_URL+'github/server/'+user+'/repo.json', '{"'+repo+'":"1"}', {
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                },
-                                timeout:10000
-                            })
-                        } catch (error) {}
-                    } else {
-                        consoleLog(id, 'Create Failed: '+user+'/'+repo)
-                    }
-
-                    try {
-                        await axios.patch(BASE_URL+'github/start/'+repo+'.json', JSON.stringify({ user:user, active:active }), {
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            timeout:10000
-                        })
-                    } catch (error) {}
+                    await axios.patch(BASE_URL+'github/'+(action ? 'start' : 'waiting')+'/'+repo+'.json', JSON.stringify({ user:user, active:active }), {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        timeout:10000
+                    })
                 } catch (error) {}
-                
+            } catch (error) {}
+            
+            try {
                 await axios.delete(BASE_URL+'github/new/'+repo+'.json', { timeout:10000 })
-            }
-        } catch (error) {}
-    }, timeout)
+            } catch (error) {}
+            
+            return true
+        }
+    } catch (error) {}
+
+    return false
 }
 
 async function startNewAction(id, user, repo, timeout) {
