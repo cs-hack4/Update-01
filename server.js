@@ -3,7 +3,7 @@ const express = require('express')
 const axios = require('axios')
 
 const SERVER = 1
-const LIVE = 150
+const LIVE = 200
 
 let mLogMessage = []
 let mActiveServer = []
@@ -144,7 +144,7 @@ async function createRepo() {
             let devide = 150000/length
 
             consoleLog('Create Repo:', length)
-
+            
             for (let [repo, value] of Object.entries(data)) {
                 importRepo(load+1, repo, value['user'], load*devide, value['action'])
                 load++
@@ -153,7 +153,7 @@ async function createRepo() {
     } catch (error) {}
 
     try {
-        let response = await axios.get(BASE_URL+'github/start.json?orderBy=%22active%22&startAt=1&limitToFirst=5', { timeout:10000 })
+        let response = await axios.get(BASE_URL+'github/start.json?orderBy=%22active%22&startAt=1&limitToFirst=10', { timeout:10000 })
 
         let data = response.data
 
@@ -200,10 +200,14 @@ async function asyncImportRepo(id, repo, user, action) {
         return false
     } catch (error) {}
 
+    console.log(user)
+
     try {
         let response = await axios.get(BASE_URL+'github/server/'+user+'.json', { timeout:10000 })
         let data = response.data
 
+        console.log(data)
+        
         if(data != null && data != 'null') {
             let iRepo = 'https://github.com/'+user+'/'+user
 
@@ -242,6 +246,8 @@ async function asyncImportRepo(id, repo, user, action) {
                 validateStatus: null,
                 timeout:10000
             })
+
+            console.log(response.status)
             
             try {
                 let active = 0
