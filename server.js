@@ -3,7 +3,7 @@ const express = require('express')
 const axios = require('axios')
 
 const SERVER = 1
-const LIVE = 200
+const LIVE = 100
 
 let mLogMessage = []
 let mActiveServer = []
@@ -98,18 +98,18 @@ async function startServer() {
         await createRepo()
     }
 
-    // await updateServer(true)
+    await updateServer(true)
 
     while (true) {
         for (let i = 0; i < 3; i++) {
             await delay(60000)
             await updateStatus()
         }
-        // await updateServer(false)
-        // if (SERVER == 1) {
-        //     await updateRender()
-        //     await createRepo()
-        // }
+        await updateServer(false)
+        if (SERVER == 1) {
+            await updateRender()
+            await createRepo()
+        }
     }
 }
 
