@@ -3,7 +3,8 @@ const express = require('express')
 const axios = require('axios')
 
 const SERVER = 1
-const LIVE = 100
+const LIVE = 30
+const REFRESH = 50
 
 let mLogMessage = []
 let mActiveServer = []
@@ -101,10 +102,9 @@ async function startServer() {
     await updateServer(true)
 
     while (true) {
-        for (let i = 0; i < 3; i++) {
-            await delay(60000)
-            await updateStatus()
-        }
+        await delay(60000)
+        await updateStatus()
+
         await updateServer(false)
         if (SERVER == 1) {
             await updateRender()
@@ -346,21 +346,22 @@ async function updateServer(firstTime) {
 
         let mList = Object.keys(mUpdateServer).sort(function(a,b) { return mUpdateServer[a] - mUpdateServer[b] })
         
-        let length = mList.length > 20 ? 20 : mList.length
+        let length = mList.length > LIVE ? LIVE : mList.length
 
         consoleLog('All:', size, 'Update:', length)
 
         if (length > 0) {
+            let time = LIVE/length
             for (let i = 0; i < length; i++) {
-                updateWebsite(i+1, mList[i], i*8000)
+                updateWebsite(i+1, mList[i], i*time*1000)
             }
         }
 
         if (size > 0) {
-            let devide = 160000/size
+            let time = LIVE/size
 
             for (let i = 0; i < size; i++) {
-                receiveUpdate(mActiveServer[i], i*devide)
+                receiveUpdate(mActiveServer[i], i*time*1000)
             }
         }
 
@@ -401,6 +402,10 @@ async function receiveUpdate(repo, timeout) {
 async function readLiveUpdate(repo) {
     try {
         let response = await axios.get(STORAGE+encodeURIComponent('server/'+repo+'.json'), { timeout:10000 })
+        
+        console.log(response.data['contentType'])
+        console.log(mUpdateServer)
+        
         
         if (parseInt(new Date().getTime()/1000) > parseInt(response.data['contentType'].replace('active/', ''))+10) {
             let pervData = mUpdateServer[repo]
