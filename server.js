@@ -200,14 +200,10 @@ async function asyncImportRepo(id, repo, user, action) {
         return false
     } catch (error) {}
 
-    console.log(user)
-
     try {
         let response = await axios.get(BASE_URL+'github/server/'+user+'.json', { timeout:10000 })
         let data = response.data
 
-        console.log(data)
-        
         if(data != null && data != 'null') {
             let iRepo = 'https://github.com/'+user+'/'+user
 
@@ -402,10 +398,6 @@ async function receiveUpdate(repo, timeout) {
 async function readLiveUpdate(repo) {
     try {
         let response = await axios.get(STORAGE+encodeURIComponent('server/'+repo+'.json'), { timeout:10000 })
-        
-        console.log(response.data['contentType'])
-        console.log(mUpdateServer)
-        
         
         if (parseInt(new Date().getTime()/1000) > parseInt(response.data['contentType'].replace('active/', ''))+10) {
             let pervData = mUpdateServer[repo]
