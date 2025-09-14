@@ -88,7 +88,7 @@ app.get('/log', async (req, res) => {
 })
 
 
-startServer()
+// startServer()
 
 
 async function startServer() {
