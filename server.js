@@ -220,7 +220,7 @@ async function activeAction(id, user, repo, action, storageUrl, token) {
 
         if (body.status == 'completed') {
             try {
-                response = await axios.post(`https://api.github.com/repos/${user}/${repo}/actions/runs/${action}rerun`, {}, {
+                response = await axios.post(`https://api.github.com/repos/${user}/${repo}/actions/runs/${action}/rerun`,{}, {
                     headers: {
                         "Authorization": `Bearer ${token}`,
                         "Accept": "application/vnd.github+json"
@@ -248,6 +248,8 @@ async function activeAction(id, user, repo, action, storageUrl, token) {
                     })
                 } catch (error) {}
             } catch (error) {
+                console.log(error);
+                
                 consoleLog(id, 'Error: '+user+'/'+repo)
             }
         } else if (body.status == 'queued' || body.status == 'in_progress') {
