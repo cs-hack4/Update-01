@@ -1,5 +1,7 @@
 const express = require('express')
+const WebSocket = require('ws')
 const axios = require('axios')
+const http = require('http')
 
 const SERVER = 1
 const LIVE = 30
@@ -21,7 +23,13 @@ const app = express()
 
 app.use(express.json())
 
-app.listen(process.env.PORT || 3000, ()=>{
+let server = http.createServer(app)
+
+let wss = new WebSocket.Server({ server })
+
+wss.on('connection', (ws, request) => { })
+
+server.listen(process.env.PORT || 3000, ()=>{
     consoleLog('Listening on port 3000')
 })
 
