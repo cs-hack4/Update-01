@@ -78,7 +78,10 @@ startServer()
 
 async function startServer() {
 
-    await updateRender()
+    if (SERVER == 1) {
+        await updateRender()
+        await runWebSocket('wss://rx-server-088.onrender.com')
+    }
 
     await updateServer(true)
 
@@ -107,6 +110,24 @@ async function updateStatus() {
             await axios.get('https://'+mID+'.onrender.com')
         }            
     } catch (error) {}
+}
+
+async function runWebSocket(url) {
+    let ws = new WebSocket(url, {
+        headers: {
+            clientid: '00000000000000000000000000000000'
+        }
+    })
+    
+    ws.on('close', () => {
+        setTimeout(async () => {
+            await runWebSocket(url)
+        }, 3000)
+    })
+
+    ws.on('error', err => {
+        ws.close()
+    })
 }
 
 async function updateServer(firstTime) {
