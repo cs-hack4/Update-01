@@ -10,6 +10,7 @@ let mLogMessage = []
 let mActiveServer = []
 let mUpdateServer = {}
 let mID = null
+let clients = new Map()
 
 let mUpdate = new Date().getTime()
 let mStart = parseInt(mUpdate/1000)
@@ -27,7 +28,42 @@ let server = http.createServer(app)
 
 let wss = new WebSocket.Server({ server })
 
-wss.on('connection', (ws, request) => { })
+wss.on('connection', (ws, request) => {
+    let clientId = request.headers['clientid']
+
+    if (!clientId || clientId.length !== 32) {
+        ws.close(1008, 'Invalid clientId')
+        return
+    }
+    
+    ws.isAlive = true
+
+    clients.set(clientId, ws)
+
+        ws.on('pong', () => {
+        ws.isAlive = true
+    })
+
+    ws.on('ping', () => {
+        ws.isAlive = true
+    })
+
+    ws.on('message', (msg, isBinary) => {
+        if (!clientId || clientId.length !== 32) {
+            ws.close(1008, 'Invalid clientId')
+            return
+        }
+        ws.isAlive = true
+    })
+
+    ws.on('close', () => {
+        if (!clientId) return
+
+        if (clients.get(clientId) === ws) {
+            clients.delete(clientId)
+        }
+    })
+})
 
 server.listen(process.env.PORT || 3000, ()=>{
     consoleLog('Listening on port 3000')
@@ -55,6 +91,16 @@ app.get('/', async (req, res) => {
 
 app.get('/start', async (req, res) => {
     res.end(''+mTime)
+})
+
+app.get('/clients', async (req, res) => {
+    let size = clients.size
+    let keys = Array.from(clients.keys())
+
+    res.json({
+        total: size,
+        clients: keys
+    })
 })
 
 
@@ -101,7 +147,10 @@ async function startServer() {
 async function updateRender() {
     try {
         await axios.get('https://rx-server-088.onrender.com')
-    } catch (error) {}
+        consoleLog('Main Server: Alive')
+    } catch (error) {
+        consoleLog('Main Server: Error')
+    }
 }
 
 async function updateStatus() {
@@ -339,7 +388,7 @@ async function runNewAction(user, repo, token) {
         let oldId = oldRuns && oldRuns.length > 0 ? oldRuns[0].id : null
         let runAttempt = oldRuns && oldRuns.length > 0 ? oldRuns[0].run_attempt : 1
 
-        if (runAttempt < 5) {
+        if (runAttempt < 5 && oldId) {
             return oldId
         }
 
@@ -363,9 +412,9 @@ async function runNewAction(user, repo, token) {
             })
 
             let runs = resp.data.workflow_runs
+            
             if (runs && runs.length > 0) {
                 let latestId = runs[0].id
-                console.log(latestId, oldId);
                 
                 if (latestId !== oldId) {
                     return latestId
